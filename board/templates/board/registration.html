@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+      {% load static %}
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Register</title>
+      <link rel="stylesheet" href="{% static 'board/registration.css' %}">
+  </head>
+  <body style="display:flex; align-items:center; justify-content:center;">
+  <div class="login-page">
+    <div class="form">
+      <form class="register-form" method="POST">
+        {% csrf_token %}
+        <h2>Register</h2>
+        {{form_create.first_name}}
+        {{form_create.last_name}}
+        {{form_create.username}}
+        {{form_create.email}}
+        {{form_create.password1}}
+        {{form_create.password2}}
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <input class="btn" name="register_input" type="submit" value="Register">
+        <p class="message">Already registered? <a href="#">Sign In</a></p>
+      </form>
+      <form class="login-form" method="POST">
+        {% csrf_token %}
+        <h2>Login</h2>
+        {{form_login.username}}
+        {{form_login.password}}
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <input class="btn" name="login_input" type="submit" value="Sign In">
+        <p class="message">Not registered? <a href="#">Create an account</a></p>
+      </form>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="{% static 'board/registration.js' %}"></script>
+  </body>
+  </html>

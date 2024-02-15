@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    {% load static %}
+    <style>
+        .card {
+            margin-bottom: 20px;
+        }
+        .row-cols-sm-3 > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Home</a>
+                <div class="d-flex flex-row-reverse">
+                    <a href="{% url 'board:logout' %}" class="btn btn-primary ms-2">LOGOUT</a>
+                    {% if current_user.first_name %}
+                        <p class="me-2">{{current_user.first_name}} {{current_user.last_name}}</p>
+                    {% else %}
+                        <p class="me-2">{{current_user.username}}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    <br>
+    </div>
+    <br>
+    <div class="container">
+    <button class="btn btn-warning" onclick="location.href='{% url 'board:create_task' %}'">Create new task</button>
+    <p></p>
+        <div class="row">
+            <div class="col-sm">
+                {% if new_tasks %}
+                <form action="{% url 'board:check_status' '1' %}" method="GET">
+                    <button class="btn btn-primary" type="submit"><h1>New tasks</h1></button>
+                </form>
+                {% else %}
+                    <h1>New tasks</h1>
+                {% endif %}
+                    {% for task in new_tasks %}
+                        <div class="card" style="width: 14rem;">
+                            <div class="card-body">
+                                <div>
+                                    <h5 class="card-title">{{task.name}}</h5>
+                                    {% if current_user == task.creator or current_user.is_superuser %}
+                                        <a href="/update_task/{{task.id}}" class="btn btn-primary">Edit</a>
+                                    {% endif %}
+                                    {% if current_user.is_superuser %}
+                                        <a class="btn btn-dark" href="{% url 'board:delete_task' task.pk %}">Delete</a>
+                                    {% endif %}
+                                </div>
+                                <p class="card-text">{{task.description | truncatewords:15 | truncatechars:70}}</p>
+                                {% if task.creator == current_user %}
+                                <div class="container">
+                                    <form action="{% url 'board:become_assigner' task.pk %}" method="POST">
+                                        {% csrf_token %}
+                                        {% if task.assigner == None and not current_user.is_superuser %}
+                                            <input type="submit" name="assigned_check" value="Become assigner">
+                                        {% elif task.assigner == current_user %}
+                                            <h3>You assigner</h3>
+                                        {% else %}
+                                            <h4>Someone else assigned</h4>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                                {% endif %}
+                                {% if current_user.is_superuser %}
+                                <div class="cotainer">
+                                            {% if task.assigner == None %}
+                                                <h4>Nobody assigned</h4>
+                                            {% else %}
+                                                <h4>{{task.assigner}}</h4>
+                                            {% endif %}
+                                            <form action="{% url 'board:appoint_assigner' task.pk %}" method="POST">
+                                                {% csrf_token %}
+                                                <select name="assigner_select">
+                                                    {% for user in users %}
+                                                        <option value="{{user.id}}">{{user.first_name}}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <input type="submit" value="Assign">
+                                            </form>
+                                </div>
+                                {% endif %}
+                                {% if current_user == task.assigner %}
+                                <div class="container">
+                                    <a name="righr_arrow" href="{% url 'board:change_status' task.pk 'right' %}"><img src="{% static 'board/right_arrow.png' %}" alt="right arrow" style="width:40px;height:40px"></a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+            </div>
+            <div class="col-sm">
+            {% if progres_tasks %}
+                <form action="{% url 'board:check_status' '2' %}" method="GET">
+                    <button class="btn btn-primary" type="submit"><h1>In progress</h1></button>
+                </form>
+            {% else %}
+                <h1>In progress</h1>
+            {% endif %}
+                {% for task in progres_tasks %}
+                <div class="card" style="width: 14rem;">
+                    <div class="card-body">
+                        <div>
+                            <h5 class="card-title">{{task.name}}</h5>
+                            {% if current_user == task.creator or current_user.is_superuser %}
+                                <a href="/update_task/{{task.id}}" class="btn btn-primary">Edit</a>
+                            {% endif %}
+                            {% if current_user.is_superuser %}
+                                <a class="btn btn-dark" href="{% url 'board:delete_task' task.pk %}">Delete</a>
+                            {% endif %}
+                        </div>
+                        <p class="card-text">{{task.description | truncatewords:15 | truncatechars:70}}</p>
+                        {% if task.creator == current_user %}
+                                <div class="container">
+                                    <form action="{% url 'board:become_assigner' task.pk %}" method="POST">
+                                        {% csrf_token %}
+                                        {% if task.assigner == None and not current_user.is_superuser %}
+                                            <input type="submit" name="assigned_check" value="Become assigner">
+                                        {% elif task.assigner == current_user %}
+                                            <h3>You assigner</h3>
+                                        {% else %}
+                                            <h4>Someone else assigned</h4>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                                {% endif %}
+                                {% if current_user.is_superuser %}
+                                <div class="cotainer">
+                                            {% if task.assigner == None %}
+                                                <h4>Nobody assigned</h4>
+                                            {% else %}
+                                                <h4>{{task.assigner}}</h4>
+                                            {% endif %}
+                                            <form action="{% url 'board:appoint_assigner' task.pk %}" method="POST">
+                                                {% csrf_token %}
+                                                <select name="assigner_select">
+                                                    {% for user in users %}
+                                                        <option value="{{user.id}}">{{user.first_name}}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <input type="submit" value="Assign">
+                                            </form>
+                                </div>
+                                {% endif %}
+                        {% if current_user == task.assigner %}
+                        <div class="container">
+                            <a name="left_arrow" href="{% url 'board:change_status' task.pk 'left' %}"><img src="{% static 'board/left_arrow.png' %}" alt="left arrow" style="width:40px;height:40px"></a>
+                            <a name="righr_arrow" href="{% url 'board:change_status' task.pk 'right' %}"><img src="{% static 'board/right_arrow.png' %}" alt="right arrow" style="width:40px;height:40px"></a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="col-sm">
+            {% if qa_tasks %}
+                <form action="{% url 'board:check_status' '3' %}" method="GET">
+                    <button class="btn btn-primary" type="submit"><h1>In QA</h1></button>
+                </form>
+            {% else %}
+                <h1>In QA</h1>
+            {% endif %}
+                {% for task in qa_tasks %}
+                <div class="card" style="width: 14rem;">
+                    <div class="card-body">
+                        <div>
+                            <h5 class="card-title">{{task.name}}</h5>
+                            {% if current_user == task.creator or current_user.is_superuser %}
+                                <a href="/update_task/{{task.id}}" class="btn btn-primary">Edit</a>
+                            {% endif %}
+                            {% if current_user.is_superuser %}
+                                <a class="btn btn-dark" href="{% url 'board:delete_task' task.pk %}">Delete</a>
+                            {% endif %}
+                        </div>
+                        <p class="card-text">{{task.description | truncatewords:15 | truncatechars:70}}</p>
+                        {% if task.creator == current_user %}
+                                <div class="container">
+                                    <form action="{% url 'board:become_assigner' task.pk %}" method="POST">
+                                        {% csrf_token %}
+                                        {% if task.assigner == None and not current_user.is_superuser %}
+                                            <input type="submit" name="assigned_check" value="Become assigner">
+                                        {% elif task.assigner == current_user %}
+                                            <h3>You assigner</h3>
+                                        {% else %}
+                                            <h4>Someone else assigned</h4>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                                {% endif %}
+                                {% if current_user.is_superuser %}
+                                <div class="cotainer">
+                                            {% if task.assigner == None %}
+                                                <h4>Nobody assigned</h4>
+                                            {% else %}
+                                                <h4>{{task.assigner}}</h4>
+                                            {% endif %}
+                                            <form action="{% url 'board:appoint_assigner' task.pk %}" method="POST">
+                                                {% csrf_token %}
+                                                <select name="assigner_select">
+                                                    {% for user in users %}
+                                                        <option value="{{user.id}}">{{user.first_name}}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <input type="submit" value="Assign">
+                                            </form>
+                                </div>
+                                {% endif %}
+                        {% if current_user == task.assigner %}
+                        <div class="container">
+                            <a name="left_arrow" href="{% url 'board:change_status' task.pk 'left' %}"><img src="{% static 'board/left_arrow.png' %}" alt="left arrow" style="width:40px;height:40px"></a>
+                            <a name="righr_arrow" href="{% url 'board:change_status' task.pk 'right' %}"><img src="{% static 'board/right_arrow.png' %}" alt="right arrow" style="width:40px;height:40px"></a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="col-sm">
+            {% if ready_tasks %}
+                <form action="{% url 'board:check_status' '4' %}" method="GET">
+                    <button class="btn btn-primary" type="submit"><h1>Ready</h1></button>
+                </form>
+            {% else %}
+                <h1>Ready</h1>
+            {% endif %}
+                {% for task in ready_tasks %}
+                <div class="card" style="width: 14rem;">
+                    <div class="card-body">
+                        <div>
+                            <h5 class="card-title">{{task.name}}</h5>
+                            {% if current_user == task.creator or current_user.is_superuser %}
+                                <a href="/update_task/{{task.id}}" class="btn btn-primary">Edit</a>
+                            {% endif %}
+                            {% if current_user.is_superuser %}
+                                <a class="btn btn-dark" href="{% url 'board:delete_task' task.pk %}">Delete</a>
+                            {% endif %}
+                        </div>
+                        <p class="card-text">{{task.description | truncatewords:15 | truncatechars:70}}</p>
+                        {% if task.creator == current_user %}
+                                <div class="container">
+                                    <form action="{% url 'board:become_assigner' task.pk %}" method="POST">
+                                        {% csrf_token %}
+                                        {% if task.assigner == None and not current_user.is_superuser %}
+                                            <input type="submit" name="assigned_check" value="Become assigner">
+                                        {% elif task.assigner == current_user %}
+                                            <h3>You assigner</h3>
+                                        {% else %}
+                                            <h4>Someone else assigned</h4>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                                {% endif %}
+                                {% if current_user.is_superuser %}
+                                <div class="cotainer">
+                                            {% if task.assigner == None %}
+                                                <h4>Nobody assigned</h4>
+                                            {% else %}
+                                                <h4>{{task.assigner}}</h4>
+                                            {% endif %}
+                                            <form action="{% url 'board:appoint_assigner' task.pk %}" method="POST">
+                                                {% csrf_token %}
+                                                <select name="assigner_select">
+                                                    {% for user in users %}
+                                                        <option value="{{user.id}}">{{user.first_name}}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <input type="submit" value="Assign">
+                                            </form>
+                                </div>
+                                {% endif %}
+                        {% if current_user == task.assigner %}
+                        <div class="container">
+                            <a name="left_arrow" href="{% url 'board:change_status' task.pk 'left' %}"><img src="{% static 'board/left_arrow.png' %}" alt="left arrow" style="width:40px;height:40px"></a>
+                        </div>
+                        {% endif %}
+                        {% if current_user.is_superuser %}
+                        <div class="container">
+                            <a name="righr_arrow" href="{% url 'board:change_status' task.pk 'right' %}"><img src="{% static 'board/right_arrow.png' %}" alt="right arrow" style="width:40px;height:40px"></a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="col-sm">
+            {% if done_tasks %}
+                <form action="{% url 'board:check_status' '5' %}" method="GET">
+                    <button class="btn btn-primary" type="submit"><h1>Done</h1></button>
+                </form>
+            {% else %}
+                <h1>Done</h1>
+            {% endif %}
+                {% for task in done_tasks %}
+                <div class="card" style="width: 14rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{task.name}}</h5>
+                        <div class="container">
+                            {% if current_user.is_superuser %}
+                                <a href="/update_task/{{task.id}}" class="btn btn-primary">Edit</a>
+                            {% endif %}
+                            {% if current_user.is_superuser %}
+                                <a class="btn btn-dark" href="{% url 'board:delete_task' task.pk %}">Delete</a>
+                            {% endif %}
+                        </div>
+                        <p class="card-text">{{task.description | truncatewords:15 | truncatechars:70}}</p>
+                        {% if current_user.is_superuser %}
+                            <div class="container">
+                                <a name="left_arrow" href="{% url 'board:change_status' task.pk 'left' %}"><img src="{% static 'board/left_arrow.png' %}" alt="left arrow" style="width:40px;height:40px"></a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
